@@ -1,33 +1,41 @@
+import java.io.File;
 import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.TreeMap;
 
 public class Main
 {
-    private static final String transactionFile = "data/movementList.csv";
-    private static TreeMap<String, Double> detailsExpense = new TreeMap<>();
+    // Вводим константы для большей наглядности
+    private static final int INCOME = 6;
+    private static final int EXPENSE = 7;
+    private static final int DESCRIPTION = 5;
+    private static final int EXPENSE_DECIMAL_PART = 8;
+    private static final String DELETING_PREVIOUS_PART_REGEX = ".+\\\\";
+    private static final String DELETING_FOLLOWING_PART_REGEX = "(\\s+){2,}(.+)";
+
 
     public static void main(String[] args) {
-        ArrayList<Transaction> transactions = loadTransactionsFromFile();
+        // загружаем файл
+        File transactionFile = new File("data/movementList.csv");
+        // Передаем в метод файл
+        ArrayList<Transaction> transactions = loadTransactionsFromFile(transactionFile);
         System.out.println("Общее поступление на счет: " + getAllIncome(transactions) + "\n");
         System.out.println("Общее списание со счета: " + getAllExpense(transactions) + "\n");
-        // Заполнения мапы расходов
-        putToMap(transactions);
         System.out.println("Детализация расходов за отчетный перриод:");
-        printMap();
+        printMap(fillingMapOfDetailedExpenses(transactions));
 
     }
 
     // Взял метод из прошлого урока, для того чтобы не усложнять.
     // Метод заполнения списка транзакций
-    private static ArrayList<Transaction> loadTransactionsFromFile(){
+    private static ArrayList<Transaction> loadTransactionsFromFile(File transactionFile){
         // создаем лист транзакций
         ArrayList<Transaction> transactions = new ArrayList<>();
         try {
             // Список линий
-            List<String> lines = Files.readAllLines(Paths.get(transactionFile));
+            List<String> lines = Files.readAllLines(transactionFile.toPath());
             for (String line : lines) {
                 // Все / приводим к одному виду \
                 line = line.replaceAll("/", "\\\\");
@@ -36,19 +44,19 @@ public class Main
                 if (fragments.length > 9) {
                     System.out.println("Wrong line: " + line);
                 } else if (fragments.length == 9) {
-                    String newItem = fragments[7] + "." + fragments[8];
+                    String newItem = fragments[EXPENSE] + "." + fragments[EXPENSE_DECIMAL_PART];
                     newItem = newItem.replaceAll("\"", "");
                     transactions.add(new Transaction(
-                            Double.parseDouble(fragments[6]),
+                            Double.parseDouble(fragments[INCOME]),
                             Double.parseDouble(newItem),
                             // Понимаю что регулярки лучше бы присовить переменным, но было уже не до этого)))
-                            fragments[5].replaceAll(".+\\\\", "").replaceAll("(\\s+){2,}(.+)", "")));
+                            fragments[DESCRIPTION].replaceAll(DELETING_PREVIOUS_PART_REGEX, "").replaceAll(DELETING_FOLLOWING_PART_REGEX, "").trim()));
                 } else if (fragments.length == 8) {
-                    if (!fragments[6].equals("Приход") && !fragments[7].equals("Расход")) {
+                    if (!fragments[INCOME].equals("Приход") && !fragments[EXPENSE].equals("Расход")) {
                         transactions.add(new Transaction(
-                            Double.parseDouble(fragments[6]),
-                            Double.parseDouble(fragments[7]),
-                            fragments[5].replaceAll(".+\\\\", "").replaceAll("(\\s+){2,}(.+)", "")));
+                            Double.parseDouble(fragments[INCOME]),
+                            Double.parseDouble(fragments[EXPENSE]),
+                            fragments[DESCRIPTION].replaceAll(DELETING_PREVIOUS_PART_REGEX, "").replaceAll(DELETING_FOLLOWING_PART_REGEX, "").trim()));
                     }
                 }
             }
@@ -75,7 +83,9 @@ public class Main
     }
 
     // Метод заполнения TreeMap для показа детального отчета по расходам.
-    private static void putToMap(ArrayList<Transaction> transactions){
+    private static Map fillingMapOfDetailedExpenses(ArrayList<Transaction> transactions){
+        TreeMap<String, Double> detailsExpense = new TreeMap<>();
+
         for (Transaction transaction : transactions) {
             detailsExpense.put(transaction.getDescription(), 0.0);
         }
@@ -87,12 +97,13 @@ public class Main
                 }
             }
         }
+        return detailsExpense;
     }
 
     // Метод печати мапы
-    private static void printMap(){
-        for (String key : detailsExpense.keySet()){
-            System.out.println("На "+ key.trim() + " было потрачено " + detailsExpense.get(key));
+    private static void printMap(Map<String, Double> map){
+        for (String key : map.keySet()){
+            System.out.println("На "+ key + " было потрачено " + map.get(key));
         }
     }
 }
