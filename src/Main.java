@@ -17,10 +17,8 @@ public class Main
 
 
     public static void main(String[] args) {
-        // загружаем файл
-        File transactionFile = new File("data/movementList.csv");
         // Передаем в метод файл
-        ArrayList<Transaction> transactions = loadTransactionsFromFile(transactionFile);
+        ArrayList<Transaction> transactions = loadTransactionsFromFile(new File("data/movementList.csv"));
         System.out.println("Общее поступление на счет: " + getAllIncome(transactions) + "\n");
         System.out.println("Общее списание со счета: " + getAllExpense(transactions) + "\n");
         System.out.println("Детализация расходов за отчетный перриод:");
@@ -49,7 +47,6 @@ public class Main
                     transactions.add(new Transaction(
                             Double.parseDouble(fragments[INCOME]),
                             Double.parseDouble(newItem),
-                            // Понимаю что регулярки лучше бы присовить переменным, но было уже не до этого)))
                             fragments[DESCRIPTION].replaceAll(DELETING_PREVIOUS_PART_REGEX, "").replaceAll(DELETING_FOLLOWING_PART_REGEX, "").trim()));
                 } else if (fragments.length == 8) {
                     if (!fragments[INCOME].equals("Приход") && !fragments[EXPENSE].equals("Расход")) {
